@@ -1,8 +1,6 @@
-// TODO: replace EMAIL and LINKEDIN_URL with the real contact details before
-// production. GITHUB_URL matches the repo owner.
-const EMAIL = "tu-email@ejemplo.com";
+const EMAIL = "sebastiantorreiro@gmail.com";
 const GITHUB_URL = "https://github.com/SebastianTorreiro";
-const LINKEDIN_URL = "https://www.linkedin.com/in/tu-perfil";
+const LINKEDIN_URL = "https://www.linkedin.com/in/sebastian-torreiro/";
 
 const contacts = [
   { label: "Email", href: `mailto:${EMAIL}`, text: EMAIL },
