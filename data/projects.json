@@ -1,0 +1,80 @@
+[
+  {
+    "slug": "venturepulse-ai",
+    "title": "VenturePulseAI",
+    "summary": "Genera CVs adaptados a startups que acaban de levantar inversión, a partir de noticias de rondas de financiamiento indexadas para búsqueda semántica.",
+    "problem": "Encontrar empresas con inversión reciente, que probablemente estén contratando, y postularse con un CV adaptado a cada una sin inventar experiencia.",
+    "role": "Proyecto personal: diseño, arquitectura e implementación completa.",
+    "stack": ["Python 3.12", "Qdrant", "fastembed", "Ollama", "Typer", "pytest", "Docker Compose"],
+    "architecture": [
+      "Arquitectura hexagonal: el dominio no depende de ninguna librería externa y define los puertos que implementan los adapters.",
+      "Pipeline RAG: noticias de feeds RSS, extracción estructurada con un LLM, embeddings, almacenamiento en Qdrant y búsqueda semántica.",
+      "Un único composition root (AppContainer) decide qué adapters concretos se usan.",
+      "CLI con tres comandos componibles: collect, search y apply."
+    ],
+    "decisions": [
+      "Guardrail contra alucinaciones en código, no en el prompt: el CV generado se valida contra el perfil; si no pasa, se reintenta hasta tres veces y falla con un error explícito.",
+      "Schema estricto para la extracción: un valor centinela en lugar de null, porque un modelo de 8B elige null con demasiada facilidad.",
+      "Todo corre local y gratis (Ollama, fastembed, Qdrant), con la opción de usar la API de Claude por configuración.",
+      "Tests unitarios y de integración separados, con fakes en lugar de mocks para que un cambio de firma rompa en compilación."
+    ],
+    "securityFindings": [
+      {
+        "title": "Prompt injection indirecta desde las noticias",
+        "description": "El texto de los feeds llega al LLM de extracción por el mismo canal que las instrucciones. Analizado con OWASP LLM Top 10 (LLM01); la mitigación está diseñada pero todavía no implementada.",
+        "status": "open"
+      }
+    ],
+    "links": {
+      "repo": "https://github.com/SebastianTorreiro/VenturePulseAI"
+    },
+    "videos": {},
+    "featured": true,
+    "order": 1
+  },
+  {
+    "slug": "jardineria-crm",
+    "title": "Todo Verde CRM",
+    "summary": "CRM multi-tenant para empresas de mantenimiento de espacios verdes: clientes, visitas, inventario y finanzas, pensado para usarse desde el celular en el trabajo de campo.",
+    "problem": "Equipos de jardinería que manejaban clientes, visitas y gastos en planillas y mensajes sueltos, y necesitaban operar desde el celular en el lugar de trabajo.",
+    "role": "Proyecto propio: producto, arquitectura y desarrollo.",
+    "stack": [
+      "Next.js 15",
+      "React 19",
+      "TypeScript",
+      "Supabase",
+      "PostgreSQL",
+      "Tailwind CSS",
+      "Zod"
+    ],
+    "architecture": [
+      "Next.js (App Router) conectado directo a Supabase, sin backend intermedio.",
+      "Capas separadas: repositories que solo consultan, services con las reglas de negocio y Server Actions como transporte.",
+      "Multi-tenant con Row Level Security en PostgreSQL: cada organización ve solo sus datos.",
+      "Las observaciones de las visitas se guardan también como embeddings en una columna vectorial."
+    ],
+    "decisions": [
+      "Todas las escrituras pasan por un wrapper que resuelve la sesión y la organización y valida el input con Zod antes de tocar la base.",
+      "Los repositories nunca lanzan errores; los services interpretan el resultado y deciden qué hacer.",
+      "Mobile-first: tarjetas en lugar de tablas y formularios en drawers sobre la vista actual."
+    ],
+    "securityFindings": [
+      {
+        "title": "Autorización por objeto en las Server Actions",
+        "description": "Revisión de las acciones de escritura buscando BOLA/IDOR: identificadores de registros relacionados que llegan desde el navegador y tienen que verificarse contra la organización de la sesión.",
+        "status": "open"
+      },
+      {
+        "title": "Cobertura de las políticas de RLS",
+        "description": "Relevamiento de qué tablas tienen RLS activo y qué operaciones cubre cada política, porque tener RLS activado no garantiza que las políticas estén completas.",
+        "status": "open"
+      }
+    ],
+    "links": {
+      "repo": "https://github.com/SebastianTorreiro/jardineria-crm"
+    },
+    "videos": {},
+    "featured": true,
+    "order": 2
+  }
+]
