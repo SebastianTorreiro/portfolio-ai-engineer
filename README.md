@@ -7,7 +7,7 @@ El proyecto usa [Sentry](https://sentry.io) para capturar errores. Antes de leva
 1. Copiá `.env.example` a `.env.local` (este último está en `.gitignore` y no se commitea).
 2. Completá las variables de Sentry:
    - `NEXT_PUBLIC_SENTRY_DSN`: DSN del proyecto, en Sentry → Project Settings → Client Keys (DSN).
-   - `SENTRY_AUTH_TOKEN`: token para subir source maps, en Sentry → Settings → Auth Tokens.
+   - `SENTRY_AUTH_TOKEN` (opcional en local): token de organización para subir source maps, en Sentry → Settings → Developer Settings → Organization Tokens. En Vercel es obligatorio; en local conviene dejarlo vacío, porque con valor cada `npm run build` sube source maps a Sentry.
 
 Sin estas variables la app funciona igual, pero no se reportan errores ni se suben source maps.
 
