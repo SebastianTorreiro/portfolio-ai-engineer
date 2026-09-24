@@ -1,5 +1,16 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Configuración local
+
+El proyecto usa [Sentry](https://sentry.io) para capturar errores. Antes de levantarlo:
+
+1. Copiá `.env.example` a `.env.local` (este último está en `.gitignore` y no se commitea).
+2. Completá las variables de Sentry:
+   - `NEXT_PUBLIC_SENTRY_DSN`: DSN del proyecto, en Sentry → Project Settings → Client Keys (DSN).
+   - `SENTRY_AUTH_TOKEN`: token para subir source maps, en Sentry → Settings → Auth Tokens.
+
+Sin estas variables la app funciona igual, pero no se reportan errores ni se suben source maps.
+
 ## Getting Started
 
 First, run the development server:
