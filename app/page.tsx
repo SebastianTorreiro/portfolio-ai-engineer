@@ -23,7 +23,7 @@ export default async function Home() {
   const projects = await getProjectsRepository().getAll();
 
   return (
-    <main className="max-w-[720px] px-6 pt-16 pb-24 sm:px-12 sm:pt-24 lg:pl-24">
+    <main className="mx-auto max-w-[720px] px-6 pt-16 pb-24 sm:px-12 sm:pt-24">
       <p className="text-sm text-slate">
         Ituzaingó, Buenos Aires, Argentina. Disponible para roles junior en Applied AI Engineering.
       </p>
