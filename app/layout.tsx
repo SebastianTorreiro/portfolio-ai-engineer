@@ -22,7 +22,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Sebastián Torreiro | Applied AI Engineer",
   description:
-    "Portafolio de Sebastián Torreiro, Applied AI Engineer. Auditoría de seguridad en sistemas RAG y LLM, con casos de estudio documentados como dossiers técnicos.",
+    "Portafolio de Sebastián Torreiro, Applied AI Engineer. Sistemas con LLMs y RAG, del prototipo a producción, con casos de estudio documentados como informes técnicos.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

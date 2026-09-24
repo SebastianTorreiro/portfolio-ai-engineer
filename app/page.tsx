@@ -24,17 +24,16 @@ export default function Home() {
       </p>
 
       <h1 className="mt-10 font-display text-4xl leading-[1.1] font-normal tracking-[-0.015em] text-balance text-ink sm:text-5xl">
-        Applied AI Engineer.{" "}
-        <span className="text-slate">Auditoría de seguridad en sistemas RAG y LLM.</span>
+        Applied AI Engineer. <span className="text-slate">Construyo sistemas con LLMs y RAG.</span>
       </h1>
 
       <hr className="mt-12 border-0 border-t border-slate" />
 
       <p className="mt-10 max-w-[65ch] text-lg">
-        Trabajo en la capa donde los modelos de lenguaje se conectan con datos y sistemas reales.
-        Construyo backends con NestJS y Python, interfaces con Next.js, y reviso pipelines de
-        recuperación aumentada buscando fugas de datos, inyección de prompts y permisos mal
-        delimitados.
+        Desarrollo aplicaciones que conectan modelos de lenguaje con datos y sistemas reales:
+        pipelines de recuperación aumentada, backends en NestJS y Python e interfaces en Next.js. Me
+        interesa lo que hace falta para que un prototipo funcione en producción: una arquitectura
+        clara, errores observables y revisar lo que construyo con criterio de seguridad.
       </p>
 
       <section aria-labelledby="casos" className="mt-20">
@@ -42,8 +41,8 @@ export default function Home() {
           Casos de estudio
         </h2>
         <p className="mt-3 max-w-[65ch] text-slate">
-          Próximamente. Cada caso se va a publicar como un informe: alcance, hallazgos y estado de
-          cada corrección.
+          Próximamente. Cada caso va a documentar el problema, la arquitectura y las decisiones de
+          diseño.
         </p>
       </section>
 
