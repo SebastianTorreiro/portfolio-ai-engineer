@@ -1,21 +1,18 @@
-"use client";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { ErrorTriggers } from "./error-triggers";
+import { isValidDebugToken } from "./token";
 
-import { useState } from "react";
+// TEMPORARY (Fase 1): verifies that client and server errors reach Sentry. Remove before closing the phase.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
-// TEMPORARY: verifies that errors reach Sentry. Remove before merging.
-export default function DebugSentryPage() {
-  const [shouldThrow, setShouldThrow] = useState(false);
+export default async function DebugSentryPage({ searchParams }: PageProps<"/debug-sentry">) {
+  const { token } = await searchParams;
+  const value = typeof token === "string" ? token : undefined;
 
-  if (shouldThrow) {
-    throw new Error("Sentry debug: intentional render error from /debug-sentry");
-  }
+  if (!isValidDebugToken(value)) notFound();
 
-  return (
-    <main style={{ padding: "2rem", fontFamily: "var(--font-plex-mono)" }}>
-      <p>Ruta temporal para verificar Sentry.</p>
-      <button type="button" onClick={() => setShouldThrow(true)}>
-        Disparar error
-      </button>
-    </main>
-  );
+  return <ErrorTriggers token={value!} />;
 }
