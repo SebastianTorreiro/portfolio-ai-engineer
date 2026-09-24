@@ -1,3 +1,6 @@
+import { ProjectList } from "@/components/project-list";
+import { getProjectsRepository } from "@/lib/adapters";
+
 const EMAIL = "sebastiantorreiro@gmail.com";
 const GITHUB_URL = "https://github.com/SebastianTorreiro";
 const LINKEDIN_URL = "https://www.linkedin.com/in/sebastian-torreiro/";
@@ -16,7 +19,9 @@ const contacts = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const projects = await getProjectsRepository().getAll();
+
   return (
     <main className="max-w-[720px] px-6 pt-16 pb-24 sm:px-12 sm:pt-24 lg:pl-24">
       <p className="text-sm text-slate">
@@ -40,10 +45,7 @@ export default function Home() {
         <h2 id="casos" className="font-display text-2xl text-ink">
           Casos de estudio
         </h2>
-        <p className="mt-3 max-w-[65ch] text-slate">
-          Próximamente. Cada caso va a documentar el problema, la arquitectura y las decisiones de
-          diseño.
-        </p>
+        <ProjectList projects={projects} />
       </section>
 
       <section aria-labelledby="contacto" className="mt-20">
