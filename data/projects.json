@@ -2,26 +2,40 @@
   {
     "slug": "venturepulse-ai",
     "title": "VenturePulseAI",
-    "summary": "Genera CVs adaptados a startups que acaban de levantar inversión, a partir de noticias de rondas de financiamiento indexadas para búsqueda semántica.",
-    "problem": "Encontrar empresas con inversión reciente, que probablemente estén contratando, y postularse con un CV adaptado a cada una sin inventar experiencia.",
-    "role": "Proyecto personal: diseño, arquitectura e implementación completa.",
-    "stack": ["Python 3.12", "Qdrant", "fastembed", "Ollama", "Typer", "pytest", "Docker Compose"],
+    "summary": "Una herramienta que armé para mi propia búsqueda de trabajo: junta noticias de rondas de inversión y ofertas laborales, las guarda para buscarlas por significado y genera un CV adaptado a cada oportunidad.",
+    "problem": "Las empresas que acaban de levantar inversión suelen salir a contratar unas semanas después, pero cuando la oferta aparece en los portales ya está llena de postulantes. Quería enterarme antes, ver qué empresas tienen plata y además están buscando gente, y tener un CV adaptado a cada una sin inventarme experiencia.",
+    "role": "Proyecto personal. Definí el problema y el alcance, y lo desarrollé trabajando con agentes de IA (Claude Code) como pair programmer.",
+    "stack": [
+      "Python 3.12",
+      "Qdrant",
+      "fastembed",
+      "Ollama",
+      "Typer",
+      "pydantic-settings",
+      "pytest",
+      "Docker Compose"
+    ],
     "architecture": [
-      "Arquitectura hexagonal: el dominio no depende de ninguna librería externa y define los puertos que implementan los adapters.",
-      "Pipeline RAG: noticias de feeds RSS, extracción estructurada con un LLM, embeddings, almacenamiento en Qdrant y búsqueda semántica.",
-      "Un único composition root (AppContainer) decide qué adapters concretos se usan.",
-      "CLI con tres comandos componibles: collect, search y apply."
+      "Arquitectura hexagonal (puertos y adaptadores). El dominio es Python puro, sin librerías externas, y define una interfaz para cada cosa externa: la base vectorial, el LLM, los embeddings y los scrapers. Cambiar Qdrant u Ollama por otro proveedor es escribir un adaptador nuevo, sin tocar la lógica.",
+      "Ingesta (collect): leo feeds RSS de noticias de inversión y de ofertas de trabajo. Un LLM local saca los datos estructurados de cada noticia (empresa, monto, serie, puesto, seniority), descarto los duplicados por un hash del contenido, genero el embedding y lo guardo en Qdrant junto con esos datos.",
+      "Búsqueda (search y match): search busca por significado a partir de una consulta libre. match convierte mi perfil en un vector y lo compara con las ofertas por similitud coseno. Funciona como un resumen diario: solo me muestra las ofertas nuevas desde la última vez que lo corrí.",
+      "Cada oferta se vincula con la ronda de inversión más reciente de la misma empresa en los últimos 60 días, así veo de un vistazo quién levantó plata y además está contratando.",
+      "Generación de CV (apply): el LLM recibe mi perfil y la oportunidad, devuelve el CV en JSON y, antes de aceptarlo, lo valido contra el perfil.",
+      "Un único composition root lee la configuración y decide qué adaptadores concretos se usan. Es el único lugar del código que conoce a Qdrant, Ollama o fastembed por su nombre."
     ],
     "decisions": [
-      "Guardrail contra alucinaciones en código, no en el prompt: el CV generado se valida contra el perfil; si no pasa, se reintenta hasta tres veces y falla con un error explícito.",
-      "Schema estricto para la extracción: un valor centinela en lugar de null, porque un modelo de 8B elige null con demasiada facilidad.",
-      "Todo corre local y gratis (Ollama, fastembed, Qdrant), con la opción de usar la API de Claude por configuración.",
-      "Tests unitarios y de integración separados, con fakes en lugar de mocks para que un cambio de firma rompa en compilación."
+      "Qdrant en lugar de pgvector. Qdrant permite indexar los datos que acompañan a cada vector (como el monto en dólares) y combinar en una sola consulta el filtro por esos datos con la búsqueda por similitud. En pgvector esos filtros van sobre JSON y pueden hacer más lenta la búsqueda aproximada. Además me da control sobre los parámetros del índice HNSW, que es lo que balancea velocidad contra precisión.",
+      "La validación contra alucinaciones está en el código y no en el prompt. El CV es un objeto del dominio que sabe validarse contra el perfil: cada línea tiene que aparecer en el perfil. Si no pasa, reintento con una instrucción más conservadora, hasta tres intentos, y si sigue fallando tira un error explícito en lugar de devolver un CV dudoso. Es estricta a propósito y hoy también rechaza reformulaciones válidas; está anotado como próxima mejora.",
+      "Structured output para la extracción. Le paso al modelo un JSON schema y Ollama obliga a que la respuesta lo respete. Para el monto uso 0 como \"no encontrado\" en lugar de permitir null, porque un modelo de 8B elegía null con demasiada facilidad. El adaptador traduce ese 0 a \"sin monto\" antes de que llegue al dominio.",
+      "Al arrancar, el servicio de embeddings mide cuántas dimensiones tiene de verdad el vector que genera el modelo y lo compara con la configuración. Si no coinciden falla de entrada, porque una colección de Qdrant creada con otras dimensiones no sirve y habría que reindexar todo.",
+      "Moví reglas de negocio al dominio. Revisando la ingesta encontré que el cálculo de la fuerza de la señal (según el monto de la ronda) y la extracción del nombre de la empresa estaban dentro del caso de uso. Son reglas puras, así que las pasé a la entidad FundingRound con un método de fábrica: ahora el objeto arma y valida sus propios datos (Tell, Don't Ask) y esas reglas se testean solas, sin simular el scraper, el LLM ni la base.",
+      "Todo corre local y gratis: Ollama con llama3.1 8B, embeddings con fastembed (BGE-small, 384 dimensiones) y Qdrant en Docker. La configuración deja reservado el lugar para usar la API de Claude como alternativa paga.",
+      "En los tests de los casos de uso uso fakes, clases reales que implementan los puertos, en lugar de mocks. Si cambia la firma de un puerto, el fake deja de cumplirla y el test falla, mientras que un mock seguiría devolviendo cualquier cosa. Los tests unitarios corren sin Docker ni red; los de integración van aparte."
     ],
     "securityFindings": [
       {
         "title": "Prompt injection indirecta desde las noticias",
-        "description": "El texto de los feeds llega al LLM de extracción por el mismo canal que las instrucciones. Analizado con OWASP LLM Top 10 (LLM01); la mitigación está diseñada pero todavía no implementada.",
+        "description": "Analicé el proyecto con el OWASP LLM Top 10. El riesgo principal es la inyección indirecta: el texto de cada noticia entra en el mismo prompt que las instrucciones, así que para el modelo no hay diferencia entre una cosa y la otra. Seguí ese texto por el código para medir el impacto real. El structured output limita los campos con tipo fijo (el monto tiene que ser un número, la serie un valor de una lista cerrada) y los campos de texto libre nunca se usan para armar consultas a Qdrant. Lo que queda es que un texto malicioso se guarde y vuelva a entrar a un prompt más adelante, cuando se recupere como contexto. Descarté una lista negra de frases porque nunca cubre todas las variantes; la mitigación que planteo es separar datos e instrucciones de forma estructural, con delimitadores y un system prompt explícito. Todavía no está implementada.",
         "status": "open"
       }
     ],
@@ -35,9 +49,9 @@
   {
     "slug": "jardineria-crm",
     "title": "Todo Verde CRM",
-    "summary": "CRM multi-tenant para empresas de mantenimiento de espacios verdes: clientes, visitas, inventario y finanzas, pensado para usarse desde el celular en el trabajo de campo.",
-    "problem": "Equipos de jardinería que manejaban clientes, visitas y gastos en planillas y mensajes sueltos, y necesitaban operar desde el celular en el lugar de trabajo.",
-    "role": "Proyecto propio: producto, arquitectura y desarrollo.",
+    "summary": "El CRM que construí para gestionar mi emprendimiento de poda y jardinería: clientes, visitas, inventario, gastos y el reparto de ganancias del equipo, pensado para usarse desde el celular en el trabajo.",
+    "problem": "Durante casi dos años tuve un emprendimiento de poda y jardinería y manejaba clientes, visitas y gastos entre planillas y mensajes. Necesitaba algo para usar en el lugar de trabajo, desde el celular. Lo hice multi-tenant desde el principio porque la idea era poder vendérselo a otros jardineros y empresas del rubro.",
+    "role": "Proyecto propio. Definí el producto a partir de mi experiencia en el rubro y lo desarrollé trabajando con agentes de IA (Claude Code) como pair programmer.",
     "stack": [
       "Next.js 15",
       "React 19",
@@ -48,25 +62,26 @@
       "Zod"
     ],
     "architecture": [
-      "Next.js (App Router) conectado directo a Supabase, sin backend intermedio.",
-      "Capas separadas: repositories que solo consultan, services con las reglas de negocio y Server Actions como transporte.",
-      "Multi-tenant con Row Level Security en PostgreSQL: cada organización ve solo sus datos.",
-      "Las observaciones de las visitas se guardan también como embeddings en una columna vectorial."
+      "Next.js (App Router) conectado directo a Supabase, sin un backend intermedio. Todas las escrituras pasan por Server Actions.",
+      "Capas separadas. Los repositories solo consultan la base y devuelven el resultado tal cual, sin lanzar errores. Los services tienen las reglas de negocio y deciden qué hacer con cada error. Las Server Actions son solo el transporte entre la interfaz y los services.",
+      "Multi-tenant con Row Level Security en PostgreSQL: cada organización ve solo sus datos, y la base lo controla aunque el código de la aplicación tenga un error.",
+      "Cerrar una visita (lo que se cobró, los gastos y lo que le toca a cada trabajador) se hace en una sola función de la base, dentro de una transacción: o se guarda todo o no se guarda nada."
     ],
     "decisions": [
-      "Todas las escrituras pasan por un wrapper que resuelve la sesión y la organización y valida el input con Zod antes de tocar la base.",
-      "Los repositories nunca lanzan errores; los services interpretan el resultado y deciden qué hacer.",
-      "Mobile-first: tarjetas en lugar de tablas y formularios en drawers sobre la vista actual."
+      "Todas las escrituras pasan por un wrapper (createSafeAction) que valida el input con Zod y resuelve la sesión y la organización del lado del servidor. La organización nunca viene del navegador.",
+      "Centralicé la resolución de sesión y organización en una sola función, que distingue \"el usuario no tiene organización\" de \"falló la consulta\". Antes los dos casos devolvían lo mismo, y un error técnico se confundía con un usuario que todavía no completó el registro.",
+      "Para detectar choques de horario entre visitas comparo minutos desde la medianoche en lugar de comparar las horas como texto, que daba resultados incorrectos.",
+      "Mobile-first: tarjetas en lugar de tablas y formularios en drawers sobre la vista actual, porque el uso real es en la calle, con el celular en la mano."
     ],
     "securityFindings": [
       {
-        "title": "Autorización por objeto en las Server Actions",
-        "description": "Revisión de las acciones de escritura buscando BOLA/IDOR: identificadores de registros relacionados que llegan desde el navegador y tienen que verificarse contra la organización de la sesión.",
-        "status": "open"
+        "title": "Un repository que salteaba Row Level Security",
+        "description": "Pasando el módulo de finanzas al patrón Repository encontré que el repository creaba su propio cliente de Supabase con la service role key. Esa clave saltea Row Level Security, así que esas consultas no quedaban aisladas por organización y todo el modelo multi-tenant dependía de que el código filtrara bien. Lo corregí haciendo que el repository reciba el cliente de la sesión del usuario como parámetro en lugar de crear uno propio, y dejé la regla escrita en la documentación del proyecto: ningún repository puede usar esa clave.",
+        "status": "resolved"
       },
       {
-        "title": "Cobertura de las políticas de RLS",
-        "description": "Relevamiento de qué tablas tienen RLS activo y qué operaciones cubre cada política, porque tener RLS activado no garantiza que las políticas estén completas.",
+        "title": "Autorización por objeto (BOLA/IDOR) en las Server Actions",
+        "description": "Audité las acciones de escritura una por una, siguiendo cada id desde el formulario hasta el insert. La organización es confiable porque se resuelve en el servidor, pero algunos ids de registros relacionados llegan desde el navegador y no se verifica que pertenezcan a esa organización. Revisé también las políticas de RLS de esas tablas: validan la organización del registro que se escribe, pero no la de los registros a los que apunta. La corrección es verificar la pertenencia antes de escribir y reforzar las políticas, y está pendiente.",
         "status": "open"
       }
     ],
